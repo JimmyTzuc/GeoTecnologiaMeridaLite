@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Formation Webmapping STEG</title>
+    <title></title>
     <meta charset="utf-8" />
 	
 	<!-- Bibliothèque de base: Leaflet-->
@@ -62,13 +62,19 @@
     <script>
 	
 		///// Fond de base
-		var OpenStreetMap = L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
-		var WorldImagery = L.tileLayer('http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
+		var merida_base = L.tileLayer.wms("http://geodesarrollo2.merida.gob.mx:8080/geoserver/geotecnologia/wms", {
+			layers: 'geotecnologia:merida_base',
+			format: 'image/png',
+			transparent: true,
+			version: '1.1.1',
+			attribution: "myattribution"
+		});
+		
 			
 	
 		///// Configuration de la map	
 		var map = L.map('map', {
-				layers: [OpenStreetMap], /// fond de base
+				layers: [merida_base], /// fond de base
 				center: [ 20.9753704, -89.6169586],/// coordonnées
 				zoom: 12	//// zoom par defaut
 			});
@@ -76,176 +82,59 @@
 
 		/////layers de base		
 		var baseLayers = {
-			"Open Street Map": OpenStreetMap,
-			"World Imagery": WorldImagery
+			"merida_base": merida_base,
 		};
 
 		
 		///// layers à partir de Geoserver (format WMS)
-		var parques = L.tileLayer.wms("http://localhost:8080/geoserver/hta_zaghouan/wms", {
-			layers: 'hta_zaghouan:appareil_coup',
-			format: 'image/png',
-			transparent: true,
-			version: '1.1.0',
-			attribution: "myattribution"
-		});
+
 		var colonias = L.tileLayer.wms("http://geodesarrollo2.merida.gob.mx:8080/geoserver/geotecnologia/wms", {
-			layers: 'geotecnologia:merida_base_old',
+			layers: 'geotecnologia:colonias',
 			format: 'image/png',
 			transparent: true,
 			version: '1.1.1',
+			attribution: "myattribution",
+            styles: "colonias_base"
 		});
-		var lid = L.tileLayer.wms("http://localhost:8050/geoserver/hta_zaghouan/wms", {
-			layers: 'hta_zaghouan:limite_inter_district',
+		var escuelas = L.tileLayer.wms("http://geodesarrollo2.merida.gob.mx:8080/geoserver/geotecnologia/wms", {
+			layers: 'geotecnologia:escuelas',
 			format: 'image/png',
 			transparent: true,
-			version: '1.1.0',
-			attribution: "myattribution"
+			version: '1.1.1',
+            styles: 'escuelas',
+		});
+		var parques = L.tileLayer.wms("http://geodesarrollo2.merida.gob.mx:8080/geoserver/geotecnologia/wms", {
+			layers: 'geotecnologia:parques',
+			format: 'image/png',
+			transparent: true,
+			version: '1.1.1',
+            styles: "parques",
 		});
 		
 						  
 		///// Groupe layers
 		var overlays = {
-			"parques": parques,
 			"colonias": colonias,
-			"lim_inter_district": lid,
+			"escuelas": escuelas,
+			"parques": parques,
 		};
-		//// Add the Find to the map 
-		var osmGeocoder = new L.Control.OSMGeocoder();
-        map.addControl(osmGeocoder);
-				
-		///// Add the Overview to the map 
-        var osm2 = L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
-		var miniMap = new L.Control.MiniMap(osm2, { toggleDisplay: true }).addTo(map);
+		
+		
 		
 		///// Add the scale control to the map
 		L.control.scale().addTo(map);
 			
 		///// Add the Navigation Bar to the map 
 		L.control.navbar({position: 'topleft'}).addTo(map);
-			
-
-		
-		///// Add the geolocate control to the map
-		L.control.locate().addTo(map);
-		
-		///// Add the mouse position to the map 
-		L.control.mousePosition().addTo(map);
-		
-		///// Add the draw feature to the map
-		var drawnItems = new L.FeatureGroup();
-		map.addLayer(drawnItems);
-
-		///// config draw feature
-		var drawControl = new L.Control.Draw({
-			position: 'topleft',
-			draw: {
-				polygon: {
-					shapeOptions: {color: 'purple'},
-					allowIntersection: false,
-					drawError: {color: 'orange',timeout: 1000},
-					showArea: true,
-					metric: false,
-					repeatMode: true
-				},
-				polyline: {
-					shapeOptions: {color: 'red'},
-				},
-				rect: {
-					shapeOptions: {color: 'green'},
-				},
-				circle: {
-					shapeOptions: {color: 'steelblue'},
-				},
-				marker: true
-				},
-						edit: {
-						  featureGroup: drawnItems,
-						  remove: true
-					}
-				});
-		map.addControl(drawControl);
-		map.on('draw:created', function (e) {
-			var type = e.layerType,
-				layer = e.layer;
-			drawnItems.addLayer(layer);
-		});
-		
-		
-		/////////// slide menu
-		var div = L.DomUtil.create('div', 'info-legend');	
-			var titre1 = 'lim_inter_district';
-			contents1 = div.innerHTML = '<br><img src="http://localhost:8050/geoserver/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&WIDTH=20&HEIGHT=20&LAYER=hta_zaghouan:appareil_coup" </img><br>';
-			
-			var titre2 = 'derivation_hta';
-			contents2 = div.innerHTML = '<br><img src="http://localhost:8050/geoserver/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&WIDTH=20&HEIGHT=20&LAYER=hta_zaghouan:derivation_hta" </img><br>';
-
-			var titre3 = 'lim_inter_district';
-			contents3 = div.innerHTML = '<br><img src="http://localhost:8050/geoserver/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&WIDTH=20&HEIGHT=20&LAYER=hta_zaghouan:limite_inter_district" </img><br>';
-			
-			var titre4 = 'noeud';
-			contents4 = div.innerHTML = '<br><img src="http://localhost:8050/geoserver/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&WIDTH=20&HEIGHT=20&LAYER=hta_zaghouan:noeud" </img><br>';
-			
-			var titre5 = 'poste_hta_bt';
-			contents5 = div.innerHTML = '<br><img src="http://localhost:8050/geoserver/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&WIDTH=20&HEIGHT=20&LAYER=hta_zaghouan:poste_hta_bt" </img><br>';
-			
-			var titre6 = 'support_hta';
-			contents6 = div.innerHTML = '<br><img src="http://localhost:8050/geoserver/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&WIDTH=20&HEIGHT=20&LAYER=hta_zaghouan:support_hta" </img><br>';
-			
-			var slideMenu = L.control.slideMenu('', {position: 'topright', delay: '5'}).addTo(map);
-			slideMenu.setContents(titre1 + contents1 + titre2 + contents2 + titre3 + contents3 + titre4 + contents4 + titre5 + contents5 + titre6 + contents6 );
 		
 		///// Ajout des couches de base + couches geoserver
 		L.control.layers(baseLayers,overlays).addTo(map);
 
-		/// Popup limite_inter_district
-			var owsrootUrl = 'http://localhost:8050/geoserver/hta_zaghouan/wms';
-			var defaultParameters = {
-				service : 'WFS',
-				version : '2.0',
-				request : 'GetFeature',
-				typeName : 'hta_zaghouan:limite_inter_district',
-				outputFormat : 'json',
-				format_options : 'callback:getJson',
-				SrsName : 'EPSG:4326'
-			};
-			var parameters = L.Util.extend(defaultParameters);
-			var URL = owsrootUrl + L.Util.getParamString(parameters);
-			var ajax = $.ajax({
-				url : URL,
-				dataType : 'json',
-				jsonpCallback : 'getJson',
-				success : function (response) {
-				L.geoJson(response, {
-						onEachFeature: function (feature, url) {
-							popupOptions = {maxWidth: 250};
-							url.bindPopup("<b>nom_deriv:</b> " + feature.properties.nom_deriv +
-								"<br><b>nom_l_i_d: </b>" + feature.properties.nom_l_i_d +
-								"<br><b>code_gto: </b>" + feature.properties.code_gto +
-								"<br><b>nom_p_s: </b>" + feature.properties.nom_p_s +
-								"<br><b>code_p_s: </b>" + feature.properties.code_p_s +
-								"<br><b>nom_depart: </b>" + feature.properties.nom_depart +
-								"<br><b>code_dep: </b>" + feature.properties.code_dep
-								,popupOptions);
-						}
-					}).addTo(map);
-				}
-			});
+		
 
 
-		//file:/C:/xxx.png
     </script>
-	<script type="text/javascript">
-		//Analytics
-			var _gaq = _gaq || [];
-			_gaq.push(['_setAccount', 'UA-36489204-2']);
-			_gaq.push(['_trackPageview']);	  
-			(function() {
-			  var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-			  ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-			  var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-			})();
-		</script>
+	
 	
 </body>
 </html>

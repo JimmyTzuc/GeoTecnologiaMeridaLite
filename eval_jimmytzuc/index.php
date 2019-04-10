@@ -1,28 +1,251 @@
-<!DOCTYPE html><html>
-<meta charset="utf-8" />
+<!DOCTYPE html>
+<html>
 <head>
-	<script src="https://unpkg.com/leaflet@1.0.2/dist/leaflet.js"></script>
-	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.2/dist/leaflet.css" />
-    <link rel="stylesheet" href="style.css">
-    
- </head>
-  <body>
-   <div id="map"></div>
-   <div></div>
- <script>
+    <title>Formation Webmapping STEG</title>
+    <meta charset="utf-8" />
+	
+	<!-- Bibliothèque de base: Leaflet-->
+    <!-- <link rel="stylesheet" href="libs/leaflet.css"/> -->
+	<!-- <script src="libs/leaflet.js"></script> -->
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css" />
+	<script src="https://unpkg.com/leaflet@1.4.0/dist/leaflet.js"></script>
+	<!-- Draw-->
+	<script src= "https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/0.2.3/leaflet.draw-src.js"></script>
+	<link rel="stylesheet" href= "https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/0.2.3/leaflet.draw.css">
+	<script src= "https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/0.2.3/leaflet.draw.js"></script>
+	
+	<!-- Slide menu-->
+	<link rel="stylesheet" href="libs/slide_menu/SlideMenu.css" />
+	<script src="libs/slide_menu/SlideMenu.js"></script>
+	<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+	
+	<!-- GeoCoder-->
+	<link rel="stylesheet" href="libs/Control.OSMGeocoder.css"/>
+	<script src="libs/Control.OSMGeocoder.js"></script>
+	
+	<!-- Overview-->
+	<link rel="stylesheet" href="libs/overview/MiniMap.css" />
+	<script src="libs/overview/MiniMap.js"></script>
  
-var map = L.map('map').
-setView([20.9753704, -89.6169586], 
-12);
- 
-L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://cloudmade.com">CloudMade</a>',
-    maxZoom: 18
-}).addTo(map);
+	<!-- Localisation-->
+	<link rel="stylesheet" href="libs/L.Control.Locate.min.css" />
+    <script src="libs/L.Control.Locate.js"></script>
+	
+	<!-- Mouse position-->
+	<link rel="stylesheet" href="libs/L.Control.MousePosition.css" />
+    <script src="libs/L.Control.MousePosition.js"></script>
+	
+	<!-- Navigation Bar-->
+    <link rel="stylesheet" href="libs/NavBar/NavBar.css"/>
+	<script src="libs/NavBar/NavBar.js"></script>
+	
+	<!-- Font-->
+	<link href="//maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css" rel="stylesheet">
+	
+	<!-- jquery-->
+	<script src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
 
-L.control.scale().addTo(map);
-L.marker([20.967778, -89.621667], {draggable: true}).addTo(map);
+	
+    <style>
+        body {
+            padding: 0;
+            margin: 0;
+        }
+        html, body, #map {
+            height: 100%;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script>
+	
+		///// Fond de base
+		var OpenStreetMap = L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+		var WorldImagery = L.tileLayer('http://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
+			
+	
+		///// Configuration de la map	
+		var map = L.map('map', {
+				layers: [OpenStreetMap], /// fond de base
+				center: [ 20.9753704, -89.6169586],/// coordonnées
+				zoom: 12	//// zoom par defaut
+			});
+		
 
- </script>
- </body> 
- </html>
+		/////layers de base		
+		var baseLayers = {
+			"Open Street Map": OpenStreetMap,
+			"World Imagery": WorldImagery
+		};
+
+		
+		///// layers à partir de Geoserver (format WMS)
+		var parques = L.tileLayer.wms("http://localhost:8080/geoserver/hta_zaghouan/wms", {
+			layers: 'hta_zaghouan:appareil_coup',
+			format: 'image/png',
+			transparent: true,
+			version: '1.1.0',
+			attribution: "myattribution"
+		});
+		var colonias = L.tileLayer.wms("http://geodesarrollo2.merida.gob.mx:8080/geoserver/geotecnologia/wms", {
+			layers: 'geotecnologia:merida_base_old',
+			format: 'image/png',
+			transparent: true,
+			version: '1.1.1',
+		});
+		var lid = L.tileLayer.wms("http://localhost:8050/geoserver/hta_zaghouan/wms", {
+			layers: 'hta_zaghouan:limite_inter_district',
+			format: 'image/png',
+			transparent: true,
+			version: '1.1.0',
+			attribution: "myattribution"
+		});
+		
+						  
+		///// Groupe layers
+		var overlays = {
+			"parques": parques,
+			"colonias": colonias,
+			"lim_inter_district": lid,
+		};
+		//// Add the Find to the map 
+		var osmGeocoder = new L.Control.OSMGeocoder();
+        map.addControl(osmGeocoder);
+				
+		///// Add the Overview to the map 
+        var osm2 = L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+		var miniMap = new L.Control.MiniMap(osm2, { toggleDisplay: true }).addTo(map);
+		
+		///// Add the scale control to the map
+		L.control.scale().addTo(map);
+			
+		///// Add the Navigation Bar to the map 
+		L.control.navbar({position: 'topleft'}).addTo(map);
+			
+
+		
+		///// Add the geolocate control to the map
+		L.control.locate().addTo(map);
+		
+		///// Add the mouse position to the map 
+		L.control.mousePosition().addTo(map);
+		
+		///// Add the draw feature to the map
+		var drawnItems = new L.FeatureGroup();
+		map.addLayer(drawnItems);
+
+		///// config draw feature
+		var drawControl = new L.Control.Draw({
+			position: 'topleft',
+			draw: {
+				polygon: {
+					shapeOptions: {color: 'purple'},
+					allowIntersection: false,
+					drawError: {color: 'orange',timeout: 1000},
+					showArea: true,
+					metric: false,
+					repeatMode: true
+				},
+				polyline: {
+					shapeOptions: {color: 'red'},
+				},
+				rect: {
+					shapeOptions: {color: 'green'},
+				},
+				circle: {
+					shapeOptions: {color: 'steelblue'},
+				},
+				marker: true
+				},
+						edit: {
+						  featureGroup: drawnItems,
+						  remove: true
+					}
+				});
+		map.addControl(drawControl);
+		map.on('draw:created', function (e) {
+			var type = e.layerType,
+				layer = e.layer;
+			drawnItems.addLayer(layer);
+		});
+		
+		
+		/////////// slide menu
+		var div = L.DomUtil.create('div', 'info-legend');	
+			var titre1 = 'lim_inter_district';
+			contents1 = div.innerHTML = '<br><img src="http://localhost:8050/geoserver/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&WIDTH=20&HEIGHT=20&LAYER=hta_zaghouan:appareil_coup" </img><br>';
+			
+			var titre2 = 'derivation_hta';
+			contents2 = div.innerHTML = '<br><img src="http://localhost:8050/geoserver/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&WIDTH=20&HEIGHT=20&LAYER=hta_zaghouan:derivation_hta" </img><br>';
+
+			var titre3 = 'lim_inter_district';
+			contents3 = div.innerHTML = '<br><img src="http://localhost:8050/geoserver/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&WIDTH=20&HEIGHT=20&LAYER=hta_zaghouan:limite_inter_district" </img><br>';
+			
+			var titre4 = 'noeud';
+			contents4 = div.innerHTML = '<br><img src="http://localhost:8050/geoserver/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&WIDTH=20&HEIGHT=20&LAYER=hta_zaghouan:noeud" </img><br>';
+			
+			var titre5 = 'poste_hta_bt';
+			contents5 = div.innerHTML = '<br><img src="http://localhost:8050/geoserver/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&WIDTH=20&HEIGHT=20&LAYER=hta_zaghouan:poste_hta_bt" </img><br>';
+			
+			var titre6 = 'support_hta';
+			contents6 = div.innerHTML = '<br><img src="http://localhost:8050/geoserver/wms?REQUEST=GetLegendGraphic&VERSION=1.0.0&FORMAT=image/png&WIDTH=20&HEIGHT=20&LAYER=hta_zaghouan:support_hta" </img><br>';
+			
+			var slideMenu = L.control.slideMenu('', {position: 'topright', delay: '5'}).addTo(map);
+			slideMenu.setContents(titre1 + contents1 + titre2 + contents2 + titre3 + contents3 + titre4 + contents4 + titre5 + contents5 + titre6 + contents6 );
+		
+		///// Ajout des couches de base + couches geoserver
+		L.control.layers(baseLayers,overlays).addTo(map);
+
+		/// Popup limite_inter_district
+			var owsrootUrl = 'http://localhost:8050/geoserver/hta_zaghouan/wms';
+			var defaultParameters = {
+				service : 'WFS',
+				version : '2.0',
+				request : 'GetFeature',
+				typeName : 'hta_zaghouan:limite_inter_district',
+				outputFormat : 'json',
+				format_options : 'callback:getJson',
+				SrsName : 'EPSG:4326'
+			};
+			var parameters = L.Util.extend(defaultParameters);
+			var URL = owsrootUrl + L.Util.getParamString(parameters);
+			var ajax = $.ajax({
+				url : URL,
+				dataType : 'json',
+				jsonpCallback : 'getJson',
+				success : function (response) {
+				L.geoJson(response, {
+						onEachFeature: function (feature, url) {
+							popupOptions = {maxWidth: 250};
+							url.bindPopup("<b>nom_deriv:</b> " + feature.properties.nom_deriv +
+								"<br><b>nom_l_i_d: </b>" + feature.properties.nom_l_i_d +
+								"<br><b>code_gto: </b>" + feature.properties.code_gto +
+								"<br><b>nom_p_s: </b>" + feature.properties.nom_p_s +
+								"<br><b>code_p_s: </b>" + feature.properties.code_p_s +
+								"<br><b>nom_depart: </b>" + feature.properties.nom_depart +
+								"<br><b>code_dep: </b>" + feature.properties.code_dep
+								,popupOptions);
+						}
+					}).addTo(map);
+				}
+			});
+
+
+		//file:/C:/xxx.png
+    </script>
+	<script type="text/javascript">
+		//Analytics
+			var _gaq = _gaq || [];
+			_gaq.push(['_setAccount', 'UA-36489204-2']);
+			_gaq.push(['_trackPageview']);	  
+			(function() {
+			  var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+			  ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+			  var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+			})();
+		</script>
+	
+</body>
+</html>
